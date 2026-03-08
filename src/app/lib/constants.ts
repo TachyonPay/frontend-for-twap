@@ -66,10 +66,6 @@ export const TOKENS = {
     robinhood: "0xf5700ae4D2969bF18b340A455B49D0459e732Cb2" as const,
     decimals: 18,
   },
-  NVDA: {
-    robinhood: "0x4A2b3c8E7d1F5e9B6a0C3d2E1f4A5b6C7d8E9f0A" as const,
-    decimals: 18,
-  },
 } as const;
 
 /* ─────────────────────────────────────────
@@ -103,7 +99,6 @@ export const SOURCE_TOKENS: SourceToken[] = [
 export const DEST_TOKENS: DestToken[] = [
   { symbol: "TSLA", name: "Tesla", icon: "/stocks/tesla.png", address: TOKENS.TSLA.robinhood, chainId: 46630, decimals: 18 },
   { symbol: "AMZN", name: "Amazon", icon: "/stocks/amzn.svg", address: TOKENS.AMZN.robinhood, chainId: 46630, decimals: 18 },
-  { symbol: "NVDA", name: "NVIDIA", icon: "/stocks/nvidia.png", address: TOKENS.NVDA.robinhood, chainId: 46630, decimals: 18 },
 ];
 
 /* ─────────────────────────────────────────

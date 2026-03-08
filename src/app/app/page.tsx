@@ -20,7 +20,6 @@ const TOKEN_COLORS: Record<string, string> = {
   ZEN: "#00b4d8",
   TSLA: "#e31937",
   AMZN: "#ff9900",
-  NVDA: "#76b900",
 };
 
 /* ─── icons ─── */
@@ -41,7 +40,7 @@ function RefreshIcon() {
 }
 
 /* ─── icons that need a dark bg because they have white/light backgrounds ─── */
-const NEEDS_DARK_BG = new Set(["TSLA", "NVDA"]);
+const NEEDS_DARK_BG = new Set(["TSLA"]);
 
 /* ─── token badge ─── */
 function TokenBadge({ symbol, icon, size = 28 }: { symbol: string; icon?: string; size?: number }) {

@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
    Server-side cache: 60s. Fetches all symbols in one call.
    ───────────────────────────────────────── */
 
-const SYMBOLS = ["TSLA", "AMZN", "NVDA", "ETH-USD", "ZEN-USD"];
+const SYMBOLS = ["TSLA", "AMZN", "ETH-USD", "ZEN-USD"];
 const CACHE_TTL = 60_000; // 60 seconds
 
 let cache: { data: Record<string, number>; ts: number } | null = null;
