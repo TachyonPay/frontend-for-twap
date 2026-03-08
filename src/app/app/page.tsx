@@ -5,12 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { createPublicClient, formatUnits, http } from "viem";
+import { createPublicClient, formatUnits, parseUnits, http } from "viem";
 import { useTwapServer, type TwapOrderListItem } from "../hooks/useTwapServer";
 import { useApproveToken } from "../hooks/useApproveToken";
 import { useOrderStatus } from "../hooks/useOrderStatus";
 import { useSettlementStatus } from "../hooks/useSettlementStatus";
 import { SOURCE_TOKENS, DEST_TOKENS, ERC20_ABI, baseSepolia, robinhoodTestnet, type SourceToken, type DestToken } from "../lib/constants";
+import { usePrices } from "../lib/PriceProvider";
 
 /* ─── token colors ─── */
 const TOKEN_COLORS: Record<string, string> = {
@@ -101,6 +102,14 @@ function fmtOrderAmount(raw: string, assetAddr: string): string {
   if (!tok) return raw;
   return `${fmtAmount(raw, tok.decimals)} ${tok.symbol}`;
 }
+function fmtBal(val: string): string {
+  const n = Number(val);
+  if (isNaN(n) || n === 0) return "0";
+  if (n < 0.0001) return "<0.0001";
+  if (n < 1) return n.toPrecision(4);
+  if (n < 10_000) return n.toFixed(4).replace(/\.?0+$/, "");
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
 function fmtInterval(sec: number): string {
   if (sec >= 3600) return `${sec / 3600}h`;
   if (sec >= 60) return `${sec / 60}m`;
@@ -116,6 +125,7 @@ export default function AppPage() {
   const twap = useTwapServer();
   const approve = useApproveToken();
   const settlement = useSettlementStatus();
+  const { convert, usd, fmtUsd, loading: pricesLoading } = usePrices();
 
   // Hydration-safe: avoid SSR mismatch by deferring connected UI to client
   const [mounted, setMounted] = useState(false);
@@ -307,18 +317,28 @@ export default function AppPage() {
             </button>
           </div>
           <div className="enter enter-d2 grid grid-cols-3 gap-2">
-            {SOURCE_TOKENS.map((tok) => (
-              <div key={tok.symbol} className="px-4 py-3 rounded-xl border border-line bg-bg-elevated">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <TokenBadge symbol={tok.symbol} icon={tok.icon} size={24} />
-                  <span className="font-display text-[13px] font-semibold text-text-1">{tok.symbol}</span>
+            {SOURCE_TOKENS.map((tok) => {
+              const bal = balances[tok.symbol];
+              const price = usd(tok.symbol);
+              const usdVal = bal && price ? Number(bal) * price : null;
+              return (
+                <div key={tok.symbol} className="px-4 py-3 rounded-xl border border-line bg-bg-elevated">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <TokenBadge symbol={tok.symbol} icon={tok.icon} size={24} />
+                    <span className="font-display text-[13px] font-semibold text-text-1">{tok.symbol}</span>
+                    {price && !pricesLoading && (
+                      <span className="ml-auto text-[10px] font-mono text-text-4">{fmtUsd(price)}</span>
+                    )}
+                  </div>
+                  <p className="font-mono text-[16px] text-text-1 leading-none">
+                    {bal ? fmtBal(bal) : "—"}
+                  </p>
+                  <p className="text-[10px] text-text-4 mt-0.5">
+                    {tok.name}{usdVal != null && usdVal > 0 ? ` · ${fmtUsd(usdVal)}` : ""}
+                  </p>
                 </div>
-                <p className="font-mono text-[16px] text-text-1 leading-none">
-                  {balances[tok.symbol] ?? "—"}
-                </p>
-                <p className="text-[10px] text-text-4 mt-0.5">{tok.name}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="enter enter-d3 flex items-center justify-between mt-6 mb-3">
@@ -327,18 +347,28 @@ export default function AppPage() {
             </p>
           </div>
           <div className="enter enter-d4 grid grid-cols-3 gap-2">
-            {DEST_TOKENS.map((tok) => (
-              <div key={tok.symbol} className="px-4 py-3 rounded-xl border border-line bg-bg-elevated">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <TokenBadge symbol={tok.symbol} icon={tok.icon} size={24} />
-                  <span className="font-display text-[13px] font-semibold text-text-1">{tok.symbol}</span>
+            {DEST_TOKENS.map((tok) => {
+              const bal = destBalances[tok.symbol];
+              const price = usd(tok.symbol);
+              const usdVal = bal && price ? Number(bal) * price : null;
+              return (
+                <div key={tok.symbol} className="px-4 py-3 rounded-xl border border-line bg-bg-elevated">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <TokenBadge symbol={tok.symbol} icon={tok.icon} size={24} />
+                    <span className="font-display text-[13px] font-semibold text-text-1">{tok.symbol}</span>
+                    {price && !pricesLoading && (
+                      <span className="ml-auto text-[10px] font-mono text-text-4">{fmtUsd(price)}</span>
+                    )}
+                  </div>
+                  <p className="font-mono text-[16px] text-text-1 leading-none">
+                    {bal ? fmtBal(bal) : "—"}
+                  </p>
+                  <p className="text-[10px] text-text-4 mt-0.5">
+                    {tok.name}{usdVal != null && usdVal > 0 ? ` · ${fmtUsd(usdVal)}` : ""}
+                  </p>
                 </div>
-                <p className="font-mono text-[16px] text-text-1 leading-none">
-                  {destBalances[tok.symbol] ?? "—"}
-                </p>
-                <p className="text-[10px] text-text-4 mt-0.5">{tok.name}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -686,6 +716,7 @@ function TwapCreateModal({
   onCreated: (orderId: string) => void;
 }) {
   const createOrder = useCreateTwapOrder();
+  const { convert, usd, fmtUsd } = usePrices();
   const [amount, setAmount] = useState("");
   const [durationSec, setDurationSec] = useState(180);
   const [intervalSec, setIntervalSec] = useState(60);
@@ -694,16 +725,34 @@ function TwapCreateModal({
   const numTranches = intervalSec > 0 ? Math.floor(durationSec / intervalSec) : 0;
   const perTranche = numTranches > 0 && numAmount > 0 ? numAmount / numTranches : 0;
 
-  // Convert to raw units
+  // Price estimates
+  const srcPrice = usd(source.symbol);
+  const destPrice = usd(dest.symbol);
+  const estOutput = numAmount > 0 ? convert(numAmount, source.symbol, dest.symbol) : null;
+  const usdValue = numAmount > 0 && srcPrice ? numAmount * srcPrice : null;
+
+  // Convert to raw units using parseUnits for precision (avoids floating point errors)
   const rawTotal = numAmount > 0
-    ? BigInt(Math.floor(numAmount * 10 ** source.decimals)).toString()
+    ? parseUnits(amount, source.decimals).toString()
     : "0";
-  const rawPerPeriod = perTranche > 0
-    ? BigInt(Math.floor(perTranche * 10 ** source.decimals)).toString()
+  const rawPerPeriod = numTranches > 0 && numAmount > 0
+    ? (parseUnits(amount, source.decimals) / BigInt(numTranches)).toString()
     : "0";
 
   const submit = async () => {
     if (numAmount <= 0 || numTranches <= 0) return;
+
+    // Calculate expected output per tranche in DEST token raw units
+    // The server uses `amounts` as expectedAmountB on the bridge intent (dest token decimals)
+    const perTrancheHuman = numAmount / numTranches;
+    const estOutputPerTranche = convert(perTrancheHuman, source.symbol, dest.symbol);
+    if (!estOutputPerTranche || estOutputPerTranche <= 0) {
+      alert("Cannot estimate output — price data unavailable. Please try again.");
+      return;
+    }
+    // Apply 2% slippage buffer (request slightly less to account for price movement)
+    const withSlippage = estOutputPerTranche * 0.98;
+    const expectedOutputRaw = parseUnits(withSlippage.toFixed(18), dest.decimals).toString();
 
     const params: TwapOrderParams = {
       assetIn: source.address,
@@ -715,6 +764,7 @@ function TwapCreateModal({
       totalAmountIn: rawTotal,
       amountPerPeriod: rawPerPeriod,
       periodSeconds: intervalSec,
+      expectedOutputPerTranche: expectedOutputRaw,
     };
 
     try {
@@ -896,14 +946,39 @@ function TwapCreateModal({
                   <span className="text-text-3">Tranches</span>
                   <span className="font-mono text-text-1">{numTranches} &times; {perTranche.toFixed(2)}</span>
                 </div>
+                {destPrice != null && srcPrice != null && (
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-text-3">Rate</span>
+                    <span className="font-mono text-text-1">
+                      1 {dest.symbol} ≈ {fmtUsd(destPrice)}
+                    </span>
+                  </div>
+                )}
                 <div className="h-px bg-line" />
                 <div className="flex justify-between items-baseline">
                   <span className="text-[13px] text-text-2 font-medium">Total deposit</span>
-                  <span className="font-display text-[17px] font-semibold text-text-1">
-                    {numAmount}{" "}
-                    <span className="text-[13px] font-normal text-text-2">{source.symbol}</span>
-                  </span>
+                  <div className="text-right">
+                    <span className="font-display text-[17px] font-semibold text-text-1">
+                      {numAmount}{" "}
+                      <span className="text-[13px] font-normal text-text-2">{source.symbol}</span>
+                    </span>
+                    {usdValue != null && (
+                      <p className="text-[11px] font-mono text-text-4">{fmtUsd(usdValue)}</p>
+                    )}
+                  </div>
                 </div>
+                {estOutput != null && (
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[13px] text-text-2 font-medium">Est. output</span>
+                    <div className="text-right">
+                      <span className="font-display text-[17px] font-semibold text-green">
+                        ~{estOutput < 0.01 ? estOutput.toPrecision(4) : estOutput.toFixed(4)}{" "}
+                        <span className="text-[13px] font-normal text-text-2">{dest.symbol}</span>
+                      </span>
+                      <p className="text-[10px] font-mono text-text-4">at market price</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

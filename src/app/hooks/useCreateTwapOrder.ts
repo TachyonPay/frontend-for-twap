@@ -33,8 +33,9 @@ export type TwapOrderParams = {
   totalAmountIn: string;            // raw units string e.g. "300000000"
   amountPerPeriod: string;          // raw units per tranche
   periodSeconds: number;            // seconds between tranches
+  expectedOutputPerTranche: string; // raw units of dest token per tranche (used as expectedAmountB)
   recipients?: string[];            // optional recipient addresses
-  amounts?: string[];               // optional per-recipient amounts
+  amounts?: string[];               // optional per-recipient amounts (in DEST token raw units)
 };
 
 /* ─────────────────────────────────────────
@@ -109,7 +110,7 @@ export function useCreateTwapOrder() {
           endTime: now + totalDuration + 60,
           permitSignature: "",
           recipients: params.recipients ?? [address],
-          amounts: params.amounts ?? [params.amountPerPeriod],
+          amounts: params.amounts ?? [params.expectedOutputPerTranche],
         };
 
         const encryptedHex = await encryptWithEcies(

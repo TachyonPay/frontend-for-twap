@@ -6,6 +6,7 @@ import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 import { baseSepolia, robinhoodTestnet } from "./lib/constants";
 import { useState, type ReactNode } from "react";
+import { PriceProvider } from "./lib/PriceProvider";
 
 const config = createConfig({
   chains: [baseSepolia, robinhoodTestnet],
@@ -27,7 +28,7 @@ export function Providers({ children }: { children: ReactNode }) {
             borderRadius: "medium",
           })}
         >
-          {children}
+          <PriceProvider>{children}</PriceProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

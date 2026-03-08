@@ -189,6 +189,7 @@ export default function TestPage() {
                 totalAmountIn: formAmount,
                 amountPerPeriod: formPerPeriod,
                 periodSeconds: Number(formPeriod),
+                expectedOutputPerTranche: formPerPeriod, // test page: use same value as input
               };
               log("Create Order", `Step: starting with params ${JSON.stringify(params)}`);
               const result = await createOrder.execute(params, 6);
